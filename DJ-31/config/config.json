@@ -1,0 +1,4 @@
+﻿{
+  "prefix": "?",
+  "token": "$Get Token from: https://discord.com/api/oauth2/authorize?client_id=1183125822228406384&permissions=8&scope=applications.commands+bot"
+}
