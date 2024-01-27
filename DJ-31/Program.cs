@@ -28,8 +28,12 @@ namespace DJ_31
     internal class Program
     {
         // Variables
+#pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
         public static DiscordClient Client { get; set; }
+#pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
+#pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
         public static IAudioService AudioService { get; set; }
+#pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
 
         static async Task Main(string[] args)
         {
@@ -53,12 +57,12 @@ namespace DJ_31
                 .ConfigureLavalink(x =>
                 {
                     x.Label = "Lavalink";
-                    x.BaseAddress = new Uri("https://lavalink.teramont.net:433/"); // http://localhost:433
-                    x.Passphrase = "eHKuFcz67k4lBS64"; // TDLX01
+                    x.BaseAddress = new Uri("http://localhost:433"); 
+                    x.Passphrase = "TDLX01"; 
                     x.ResumptionOptions = new LavalinkSessionResumptionOptions(TimeSpan.FromSeconds(60));
                     x.ReadyTimeout = TimeSpan.FromSeconds(15);
                 })
-                .AddLogging(x => x.AddConsole())
+                //.AddLogging(x => x.AddConsole())
                 .BuildServiceProvider();
             AudioService = serviceProvider.GetRequiredService<IAudioService>();
 

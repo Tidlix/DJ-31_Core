@@ -11,6 +11,9 @@ using System.Threading.Tasks;
 using System.Xml.Linq;
 using Microsoft.Extensions.Options;
 using Lavalink4NET.Rest.Entities.Tracks;
+using Lavalink4NET;
+using System.Numerics;
+using System.Diagnostics.Tracing;
 
 namespace DJ_31
 {
@@ -53,7 +56,7 @@ namespace DJ_31
                 var error = new DiscordEmbedBuilder()
                 {
                     Title = "Error!",
-                    Description = $"Der Song {Reader.song} wurde nicht gefunden! Bitte Kontaktiere Tidlix",
+                    Description = $"Der Song \n{Reader.song}\n wurde nicht gefunden! Bitte Kontaktiere Tidlix",
                     Color = DiscordColor.Red
                 };
                 await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(error));
@@ -77,18 +80,33 @@ namespace DJ_31
             await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(response));
         }
 
-        private async Task NextTrack(object sender, Lavalink4NET.Events.Players.TrackEndedEventArgs eventArgs)
-        {
-            var Reader = new playlistReader();
-            await Reader.GetPlaylist();
-
-
-        }
 
         [SlashCommand("Stop", "Stoppt die Musik")]
         public async Task Stop(InteractionContext ctx)
         {
-            
+            await ctx.DeferAsync();
+
+            var AudioService = Program.AudioService;
+            var Player = GetPlayerAsync(ctx).Result;
+
+            // No player error
+            if (Player == null)
+            {
+                await ctx.DeleteResponseAsync();
+                return;
+            }
+
+            await Player.StopAsync();
+            await Player.DisconnectAsync();
+
+            // Response
+            var response = new DiscordEmbedBuilder()
+            {
+                Title = "/Stop",
+                Description = "Der Bot wurde gestoppt!",
+                Color = DiscordColor.Red
+            };
+            await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(response));
         }
 
 
@@ -96,14 +114,56 @@ namespace DJ_31
         [SlashCommand("Pause", "Pausiere, und starte die Musik")]
         public async Task Pause(InteractionContext ctx)
         {
-            
+            await ctx.DeferAsync();
+
+            var AudioService = Program.AudioService;
+            var Player = GetPlayerAsync(ctx).Result;
+
+            // No player error
+            if (Player == null)
+            {
+                await ctx.DeleteResponseAsync();
+                return;
+            }
+
+            await Player.PauseAsync();
+
+            // Response
+            var response = new DiscordEmbedBuilder()
+            {
+                Title = "/Pause",
+                Description = "Der Bot wurde Pausiert!",
+                Color = DiscordColor.Lilac
+            };
+            await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(response));
         }
 
 
         [SlashCommand("Resume", "Spiele die Musik ab, nachdem Sie pausiert wurde!")]
         public async Task Resume(InteractionContext ctx)
         {
-                    
+            await ctx.DeferAsync();
+
+            var AudioService = Program.AudioService;
+            var Player = GetPlayerAsync(ctx).Result;
+
+            // No player error
+            if (Player == null)
+            {
+                await ctx.DeleteResponseAsync();
+                return;
+            }
+
+            await Player.ResumeAsync();
+
+            // Response
+            var response = new DiscordEmbedBuilder()
+            {
+                Title = "/Resume",
+                Description = "Der Bot spielt jetzt weiter!",
+                Color = DiscordColor.Lilac
+            };
+            await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(response));
         }
 
 
@@ -111,8 +171,48 @@ namespace DJ_31
         [SlashCommand("Skip", "Gehe zum nächsten Lied")]
         public async Task Skip(InteractionContext ctx)
         {
+            var AudioService = Program.AudioService;
+            var Player = GetPlayerAsync(ctx).Result;
 
+            var Reader = new playlistReader();
+            await Reader.GetPlaylist();
+
+            // Get track
+            await Reader.ReadPlaylist(Reader.playlist, false);
+
+            var Track = await AudioService.Tracks
+                .LoadTracksAsync(Reader.song, TrackSearchMode.YouTube);
+
+            // No track error
+#pragma warning disable CS8073
+            if (Track == null)
+            {
+                var error = new DiscordEmbedBuilder()
+                {
+                    Title = "Error!",
+                    Description = $"Der Song \n{Reader.song}\n wurde nicht gefunden! Bitte Kontaktiere Tidlix",
+                    Color = DiscordColor.Red
+                };
+                await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(error));
+                return;
+            }
+#pragma warning restore CS8073
+
+            // Play track
+#pragma warning disable CS8602 // Dereference of a possibly null reference.
+            await Player.PlayAsync(Track.ToString());
+#pragma warning restore CS8602 // Dereference of a possibly null reference.
+
+            // Response
+            var response = new DiscordEmbedBuilder()
+            {
+                Title = "/Skip",
+                Description = "Das Lied wurde übersprungen!",
+                Color = DiscordColor.Blurple
+            };
+            await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(response));
         }
+
 
 
         [SlashCommand("Playlist", "Verändere die Playlist!")]
@@ -120,16 +220,69 @@ namespace DJ_31
             [Choice("MCDOMELP", 1)]
             [Choice("joni.tv", 2)]
             [Choice("Tildix", 3)]
-            [Option("Playlist", "Wähle eine Playlist aus")] long playlistL)
+            [Option("Playlist", "Wähle eine Playlist aus")] long playlist)
         {
+            var Reader = new playlistReader();
+            await Reader.SetPlaylist((int)playlist);
 
+            // Response
+            var response = new DiscordEmbedBuilder()
+            {
+                Title = "/Playlist",
+                Description = "Die Playlist wurde geändert, und wird ab dem nächsten Lied abgespielt!",
+                Color = DiscordColor.Blurple
+            };
+            await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(response));
         }
 
         [SlashCommand("Song", "Spiele ein Bestimmtes Lied")]
         public async Task Song(InteractionContext ctx, [Option("Songtitel", "Welches Lied möchtest du spielen?")] string song)
         {
+            await ctx.DeferAsync();
 
+            var AudioService = Program.AudioService;
+            var Player = GetPlayerAsync(ctx).Result;
+
+            // No player error
+            if (Player == null)
+            {
+                await ctx.DeleteResponseAsync();
+                return;
+            }
+
+            // Check if allready Playing
+            bool allreadyPlaying = false;
+            if (Player.CurrentTrack == null) allreadyPlaying = false;
+            else if (Player.CurrentTrack != null) allreadyPlaying = true;
+
+            // Get track
+            var Track = await AudioService.Tracks
+                .LoadTracksAsync(song, TrackSearchMode.YouTube);
+
+            // No track error
+#pragma warning disable CS8073
+            if (Track == null)
+            {
+                var error = new DiscordEmbedBuilder()
+                {
+                    Title = "Error!",
+                    Description = $"Der Song \"{song}\" wurde nicht gefunden! Bitte Kontaktiere Tidlix",
+                    Color = DiscordColor.Red
+                };
+                await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(error));
+                return;
+            }
+#pragma warning restore CS8073
+
+            // Play track
+            await Player.PlayAsync(Track.ToString());
+
+            if (!allreadyPlaying)
+            {
+                AudioService.TrackEnded += StopAfterSong;
+            }
         }
+
 
         // Others
         private async ValueTask<QueuedLavalinkPlayer?> GetPlayerAsync(InteractionContext ctx, bool connectToVoiceChannel = true)
@@ -161,6 +314,28 @@ namespace DJ_31
             }
 
             return result.Player;
+        }
+
+        private async Task NextTrack(object sender, Lavalink4NET.Events.Players.TrackEndedEventArgs eventArgs)
+        {
+            var AudioService = Program.AudioService;
+            var Player = eventArgs.Player;
+
+            var Reader = new playlistReader();
+            await Reader.GetPlaylist();
+
+            // Get track
+            await Reader.ReadPlaylist(Reader.playlist, false);
+
+            var Track = await AudioService.Tracks
+                .LoadTracksAsync(Reader.song, TrackSearchMode.YouTube);
+
+            // Play track
+            await Player.PlayAsync(Track.ToString());
+        }
+        private async Task StopAfterSong(object sender, Lavalink4NET.Events.Players.TrackEndedEventArgs eventArgs)
+        {
+            await eventArgs.Player.DisconnectAsync();
         }
     }
 }
