@@ -1,6 +1,5 @@
 ﻿using DJ_31.Playlists;
 using DSharpPlus.Entities;
-using DSharpPlus.Lavalink;
 using DSharpPlus.Net;
 using DSharpPlus.SlashCommands;
 using System;
@@ -115,83 +114,36 @@ namespace DJ_31.Commands
                 Environment.Exit(0);
             }
 
-            [SlashCommand("LavaLink", "Ändert den Lavalink Server!")]
-            public async Task LavaLink(InteractionContext ctx, 
-                [Choice("oce", 1)]
-                [Choice("eu", 2)]
-                [Choice("nn", 3)]
-                [Option("Server", "Welchen Lavalink Server willst du probieren?")] long server)
+            [SlashCommand("GetPlaylist", "Erhalte die Momentane Playlist")]
+            public async Task Get_PL (InteractionContext ctx)
             {
                 await ctx.DeferAsync();
 
-                var lavalink = ctx.Client.GetLavalink();
-                var node = lavalink.ConnectedNodes.Values.First();
-                var connection = node.GetGuildConnection(ctx.Member.VoiceState.Guild);
-
-                await node.StopAsync();
-                await connection.DisconnectAsync();
-
-                if (server == 1)
-                {
-                    var endpoint = new ConnectionEndpoint
-                    {
-                        Hostname = "oce-lavalink.lexnet.cc",
-                        Port = 443,
-                        Secured = true,
-                    };
-
-                    var LavalinkConfig = new LavalinkConfiguration()
-                    {
-                        Password = "lexn3tl@val!nk",
-                        RestEndpoint = endpoint,
-                        SocketEndpoint = endpoint,
-                    };
-
-                    await lavalink.ConnectAsync(LavalinkConfig);
-                }
-                if (server == 2)
-                {
-                    var endpoint = new ConnectionEndpoint
-                    {
-                        Hostname = "eu-lavalink.lexnet.cc",
-                        Port = 443,
-                        Secured = true,
-                    };
-
-                    var LavalinkConfig = new LavalinkConfiguration()
-                    {
-                        Password = "lexn3tl@val!nk",
-                        RestEndpoint = endpoint,
-                        SocketEndpoint = endpoint,
-                    };
-
-                    await lavalink.ConnectAsync(LavalinkConfig);
-                }
-                if (server == 3)
-                {
-                    var endpoint = new ConnectionEndpoint
-                    {
-                        Hostname = "lavalink.lexnet.cc",
-                        Port = 443,
-                        Secured = true,
-                    };
-
-                    var LavalinkConfig = new LavalinkConfiguration()
-                    {
-                        Password = "lexn3tl@val!nk",
-                        RestEndpoint = endpoint,
-                        SocketEndpoint = endpoint,
-                    };
-
-                    await lavalink.ConnectAsync(LavalinkConfig);
-                }
-
-                node = lavalink.ConnectedNodes.Values.First();
+                var Reader = new playlistReader();
+                await Reader.GetPlaylist();
 
                 var response = new DiscordEmbedBuilder()
                 {
                     Title = "DEBUG!",
-                    Description = "Der Server wurde geändert! Bitte nutze /Start, um eine Playlist zu starten!",
+                    Description = $"Playlist: {Reader.playlist}",
+                    Color = DiscordColor.Yellow
+                };
+                await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(response));
+            }
+
+            [SlashCommand("SetPlaylist", "Verändere die momentane Playlist")]
+            public async Task Set_PL(InteractionContext ctx, [Option("Playlist", "Wähle die PlaylistNr")]long playlist)
+            {
+                await ctx.DeferAsync();
+
+                var Reader = new playlistReader();
+                await Reader.SetPlaylist((int)playlist);
+                await Reader.GetPlaylist();
+
+                var response = new DiscordEmbedBuilder()
+                {
+                    Title = "DEBUG!",
+                    Description = $"Playlist: {Reader.playlist}",
                     Color = DiscordColor.Yellow
                 };
                 await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(response));

@@ -2,15 +2,26 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using DJ_31.Commands;
 using DJ_31.Config;
 using DSharpPlus;
 using DSharpPlus.Entities;
-using DSharpPlus.Lavalink;
 using DSharpPlus.Net;
 using DSharpPlus.SlashCommands;
 using Newtonsoft.Json;
+using Lavalink4NET;
+using Lavalink4NET.Rest;
+using Lavalink4NET.DSharpPlus;
+using Lavalink4NET.Extensions;
+using Lavalink4NET.Players;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Console;
+using System.Net.NetworkInformation;
+using Lavalink4NET.Players.Queued;
 
 namespace DJ_31
 {
@@ -18,7 +29,7 @@ namespace DJ_31
     {
         // Variables
         public static DiscordClient Client { get; set; }
-        public bool isOnline { get; set; } = true;
+        public static IAudioService AudioService { get; set; }
 
         static async Task Main(string[] args)
         {
@@ -35,6 +46,22 @@ namespace DJ_31
             };
             Client = new DiscordClient(DcConfig);
 
+            // Lavalink
+            using var serviceProvider = new ServiceCollection()
+                .AddSingleton(Client)
+                .AddLavalink()
+                .ConfigureLavalink(x =>
+                {
+                    x.Label = "Lavalink";
+                    x.BaseAddress = new Uri("https://lavalink.teramont.net:433/"); // http://localhost:433
+                    x.Passphrase = "eHKuFcz67k4lBS64"; // TDLX01
+                    x.ResumptionOptions = new LavalinkSessionResumptionOptions(TimeSpan.FromSeconds(60));
+                    x.ReadyTimeout = TimeSpan.FromSeconds(15);
+                })
+                .AddLogging(x => x.AddConsole())
+                .BuildServiceProvider();
+            AudioService = serviceProvider.GetRequiredService<IAudioService>();
+
             // Ready log
             Client.Ready += Client_Ready;
 
@@ -44,30 +71,18 @@ namespace DJ_31
             SlashCommandConfig.RegisterCommands<InfoCommands>();
             SlashCommandConfig.RegisterCommands<DebugCommands>();
 
-            // Lavalink 
-            var endpoint = new ConnectionEndpoint
-            {
-                Hostname = "oce-lavalink.lexnet.cc",
-                Port = 443,
-                Secured = true,
-            };
-
-            var LavalinkConfig = new LavalinkConfiguration()
-            {
-                Password = "lexn3tl@val!nk",
-                RestEndpoint = endpoint,
-                SocketEndpoint = endpoint,
-            };
-
-            var lavalink = Client.UseLavalink();
-
             // Puts bot online
             await Client.ConnectAsync();
-            await lavalink.ConnectAsync(LavalinkConfig);
-
+            foreach (var hostedService in serviceProvider.GetServices<IHostedService>())
+            {
+                await hostedService
+                    .StartAsync(CancellationToken.None)
+                    .ConfigureAwait(false);
+            }
 
             await Task.Delay(-1);
         }
+
 
         private static Task Client_Ready(DiscordClient sender, DSharpPlus.EventArgs.ReadyEventArgs args)
         {

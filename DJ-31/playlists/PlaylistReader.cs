@@ -12,7 +12,11 @@ namespace DJ_31.Playlists
 {
     internal class playlistReader
     {
+#pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
         public string song { get; set; }
+#pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
+        public int playlist {  get; set; }
+
         public async Task ReadPlaylist(int playlist, bool Debug)
         {
             if (Debug)
@@ -46,20 +50,55 @@ namespace DJ_31.Playlists
                 if (Debug) Console.WriteLine("[DEBUG] Checkpoint 1!");
                 string json = await sr.ReadToEndAsync();
                 if (Debug) Console.WriteLine("[DEBUG] Checkpoint 2!");
+#pragma warning disable CS8600 // Converting null literal or possible null value to non-nullable type.
                 Dictionary<string, string> songs = JsonConvert.DeserializeObject<Dictionary<string, string>>(json);
+#pragma warning restore CS8600 // Converting null literal or possible null value to non-nullable type.
                 if (Debug) Console.WriteLine("[DEBUG] Checkpoint 3!");
 
                 var random = new Random();
                 if (Debug) Console.WriteLine("[DEBUG] Checkpoint 4!");
+#pragma warning disable CS8602 // Dereference of a possibly null reference.
                 int index = random.Next(1, songs.Count + 1);
+#pragma warning restore CS8602 // Dereference of a possibly null reference.
                 if (Debug) Console.WriteLine("[DEBUG] Checkpoint 5!");
 
                 songs.TryGetValue(index.ToString(), out var nextSong);
                 if (Debug) Console.WriteLine("[DEBUG] Checkpoint 6!");
+#pragma warning disable CS8601 // Possible null reference assignment.
                 this.song = nextSong;
+#pragma warning restore CS8601 // Possible null reference assignment.
                 if (Debug) Console.WriteLine("[DEBUG] Checkpoint 7! (Ende)");
                 if (Debug) Console.WriteLine($"[DEBUG] Song: {song}");
             }
+        }
+
+
+        public async Task SetPlaylist(int playlist)
+        {
+            using (StreamWriter sr = new StreamWriter("currentPlaylist.json"))
+            {
+                await sr.WriteAsync("{" +
+                    "\n\"playlist\": " + playlist +
+                    "\n}");
+            }
+        }
+        public async Task GetPlaylist()
+        {
+            using (StreamReader sr = new StreamReader("currentPlaylist.json"))
+            {
+                string json = await sr.ReadToEndAsync();
+#pragma warning disable CS8600 // Converting null literal or possible null value to non-nullable type.
+                JSONStructure data = JsonConvert.DeserializeObject<JSONStructure>(json);
+#pragma warning restore CS8600 // Converting null literal or possible null value to non-nullable type.
+#pragma warning disable CS8602 // Dereference of a possibly null reference.
+                this.playlist = data.playlist;
+#pragma warning restore CS8602 // Dereference of a possibly null reference.
+            }
+        }
+
+        internal sealed class JSONStructure
+        {
+            public int playlist { get; set; }
         }
     }
 }

@@ -1,5 +1,4 @@
 ﻿using DSharpPlus.Entities;
-using DSharpPlus.Lavalink;
 using DSharpPlus.SlashCommands;
 using System;
 using System.Collections.Generic;
@@ -34,74 +33,10 @@ namespace DJ_31.Commands
             await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(response));
         }
 
-        [SlashCommand("Info", "Erhalte Informationen über das aktuelle Lied!")]
-        public async Task Info(InteractionContext ctx)
-        {
-            var lavalinkInstance = ctx.Client.GetLavalink();
-            var node = lavalinkInstance.ConnectedNodes.Values.First();
-            var connection = node.GetGuildConnection(ctx.Member.VoiceState.Guild);
-
-            //ERRORS:    
-            // no lavalinkInstance (Error 02)
-            if (lavalinkInstance == null)
-            {
-                await ctx.DeferAsync();
-                var noIstanceResponse = new DiscordEmbedBuilder()
-                {
-                    Title = "Error 02",
-                    Description = "Fehlgeschlagen!" +
-                    "\n Kein Lavalink gefunden!" +
-                    "\n\n Bitte versuche es später erneut! Sollte der Fehler weiterhin bestehen, kontaktiere Artzt31!",
-                    Color = DiscordColor.Red,
-                };
-
-                await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(noIstanceResponse));
-                return;
-            }
-            // no lavalinkNodes (Error 03)
-            if (lavalinkInstance.ConnectedNodes == null)
-            {
-                await ctx.DeferAsync();
-                var noIstanceNodeResponse = new DiscordEmbedBuilder()
-                {
-                    Title = "Error 03",
-                    Description = "Fehlgeschlagen!" +
-                    "\n Keine Lavalink node gefunden!" +
-                    "\n\n Bitte versuche es später erneut! Sollte der Fehler weiterhin bestehen, kontaktiere Artzt31!",
-                    Color = DiscordColor.Red,
-                };
-
-                await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(noIstanceNodeResponse));
-                return;
-            }
-            // no Connection (Error 04)
-            if (connection == null)
-            {
-                await ctx.DeferAsync();
-                var noIstanceNodeResponse = new DiscordEmbedBuilder()
-                {
-                    Title = "Error 04",
-                    Description = "Fehlgeschlagen!" +
-                    "\n Keine Connection gefunden!" +
-                    "\n\n Bitte versuche es später erneut! Sollte der Fehler weiterhin bestehen, kontaktiere Artzt31!",
-                    Color = DiscordColor.Red,
-                };
-
-                await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(noIstanceNodeResponse));
-                return;
-            }
-
-            await ctx.DeferAsync();
-            var response = new DiscordEmbedBuilder()
-            {
-                Title = "Info",
-                Description = $"Titel: {connection.CurrentState.CurrentTrack.Title}" +
-                $"\n Author: {connection.CurrentState.CurrentTrack.Author}" +
-                $"\n Länge: {connection.CurrentState.CurrentTrack.Length} (Stunden:Minuten:Sekunden)" +
-                $"\n Link: {connection.CurrentState.CurrentTrack.Uri}",
-                Color = DiscordColor.Aquamarine
-            };
-            await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(response));
-        }
+        //[SlashCommand("Info", "Erhalte Informationen über das aktuelle Lied!")]
+        //public async Task Info(InteractionContext ctx)
+        //{
+           
+        //}
     }
 }
