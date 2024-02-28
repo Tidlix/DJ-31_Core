@@ -50,7 +50,7 @@ namespace DJ_31
                 .LoadTracksAsync(Reader.song, TrackSearchMode.YouTube);
 
             // No track error
-                #pragma warning disable CS8073 
+#pragma warning disable CS8073
             if (Track == null)
             {
                 var error = new DiscordEmbedBuilder()
@@ -62,10 +62,13 @@ namespace DJ_31
                 await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(error));
                 return;
             }
-                #pragma warning restore CS8073
+#pragma warning restore CS8073
+
 
             // Play track
-            await Player.PlayAsync(Track.ToString());
+#pragma warning disable CS8604 // Possible null reference argument.
+            await Player.PlayAsync(Track.Track);
+#pragma warning restore CS8604 // Possible null reference argument.
 
             // Track ended
             AudioService.TrackEnded += NextTrack;
@@ -73,7 +76,7 @@ namespace DJ_31
             // Response
             var response = new DiscordEmbedBuilder()
             {
-                Title = "/Play",
+                Title = "/Start",
                 Description = "Der Bot spielt jetzt die ausgewählte Playlist.",
                 Color = DiscordColor.Green
             };
@@ -171,37 +174,14 @@ namespace DJ_31
         [SlashCommand("Skip", "Gehe zum nächsten Lied")]
         public async Task Skip(InteractionContext ctx)
         {
+            await ctx.DeferAsync();
             var AudioService = Program.AudioService;
             var Player = GetPlayerAsync(ctx).Result;
 
-            var Reader = new playlistReader();
-            await Reader.GetPlaylist();
-
-            // Get track
-            await Reader.ReadPlaylist(Reader.playlist, false);
-
-            var Track = await AudioService.Tracks
-                .LoadTracksAsync(Reader.song, TrackSearchMode.YouTube);
-
-            // No track error
-#pragma warning disable CS8073
-            if (Track == null)
-            {
-                var error = new DiscordEmbedBuilder()
-                {
-                    Title = "Error!",
-                    Description = $"Der Song \n{Reader.song}\n wurde nicht gefunden! Bitte Kontaktiere Tidlix",
-                    Color = DiscordColor.Red
-                };
-                await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(error));
-                return;
-            }
-#pragma warning restore CS8073
-
-            // Play track
 #pragma warning disable CS8602 // Dereference of a possibly null reference.
-            await Player.PlayAsync(Track.ToString());
+            var TrackEnd = Player.CurrentTrack.Duration;
 #pragma warning restore CS8602 // Dereference of a possibly null reference.
+            await Player.SeekAsync(TrackEnd);
 
             // Response
             var response = new DiscordEmbedBuilder()
@@ -212,7 +192,6 @@ namespace DJ_31
             };
             await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(response));
         }
-
 
 
         [SlashCommand("Playlist", "Verändere die Playlist!")]
@@ -235,6 +214,7 @@ namespace DJ_31
             await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(response));
         }
 
+
         [SlashCommand("Song", "Spiele ein Bestimmtes Lied")]
         public async Task Song(InteractionContext ctx, [Option("Songtitel", "Welches Lied möchtest du spielen?")] string song)
         {
@@ -255,9 +235,39 @@ namespace DJ_31
             if (Player.CurrentTrack == null) allreadyPlaying = false;
             else if (Player.CurrentTrack != null) allreadyPlaying = true;
 
-            // Get track
-            var Track = await AudioService.Tracks
+
+            TrackLoadResult Track;
+
+            bool isLink = false;
+            string searchType = "Namenssuche";
+
+            // Check if Spotify Link
+            if (song.Contains("https://open.spotify.com/") || song.Contains("/track/"))
+            {
+                isLink = true;
+                searchType = "Spotify Link";
+                Track = await AudioService.Tracks
+                .LoadTracksAsync(song, TrackSearchMode.Spotify);
+            }
+            //Check if Youtube Link
+            else if (song.Contains("https://www.youtube.com/watch?v="))
+            {
+                isLink = true;
+                searchType = "Youtube Link";
+                Track = await AudioService.Tracks
                 .LoadTracksAsync(song, TrackSearchMode.YouTube);
+            }
+            else if (song.Contains("https://"))
+            {
+                searchType = "Ungültiger Link!";
+            }
+            else
+            {
+                Track = await AudioService.Tracks
+                .LoadTracksAsync(song, TrackSearchMode.YouTube);
+            }
+
+
 
             // No track error
 #pragma warning disable CS8073
@@ -266,7 +276,12 @@ namespace DJ_31
                 var error = new DiscordEmbedBuilder()
                 {
                     Title = "Error!",
-                    Description = $"Der Song \"{song}\" wurde nicht gefunden! Bitte Kontaktiere Tidlix",
+                    Description = $"Die Songsuche ist fehlgeschlagen! " +
+                    $"\nFalls der eingegebene Song ein Link war, kontrolliere ob der Link richtig war!" +
+                    $"\nFalls der Link richtig war, mache einen Screenshot von dieser Nachricht, und schicke diesen an Tidlix!" +
+                    $"\n\nSuche: {song}" +
+                    $"\nLink: {isLink}" +
+                    $"\nSuchmodus: {searchType}",
                     Color = DiscordColor.Red
                 };
                 await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(error));
@@ -275,12 +290,23 @@ namespace DJ_31
 #pragma warning restore CS8073
 
             // Play track
-            await Player.PlayAsync(Track.ToString());
+#pragma warning disable CS8604 // Possible null reference argument.
+            await Player.PlayAsync(Track.Track);
+#pragma warning restore CS8604 // Possible null reference argument.
 
             if (!allreadyPlaying)
             {
                 AudioService.TrackEnded += StopAfterSong;
             }
+
+            // Response
+            var response = new DiscordEmbedBuilder()
+            {
+                Title = "/Song",
+                Description = "Das Lied wurde in die Warteschlange getan!",
+                Color = DiscordColor.Lilac
+            };
+            await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(response));
         }
 
 
@@ -321,17 +347,35 @@ namespace DJ_31
             var AudioService = Program.AudioService;
             var Player = eventArgs.Player;
 
-            var Reader = new playlistReader();
-            await Reader.GetPlaylist();
+            if (Player.CurrentTrack == null)
+            {
+                var Reader = new playlistReader();
+                await Reader.GetPlaylist();
 
-            // Get track
-            await Reader.ReadPlaylist(Reader.playlist, false);
+                bool isPlaying = false;
 
-            var Track = await AudioService.Tracks
-                .LoadTracksAsync(Reader.song, TrackSearchMode.YouTube);
+                while (!isPlaying)
+                {
+                    // Get track
+                    await Reader.ReadPlaylist(Reader.playlist, false);
 
-            // Play track
-            await Player.PlayAsync(Track.ToString());
+                    var Track = await AudioService.Tracks
+                        .LoadTracksAsync(Reader.song, TrackSearchMode.YouTube);
+
+                    // Play track
+#pragma warning disable CS8604 // Possible null reference argument.
+                    await Player.PlayAsync(Track.Track);
+#pragma warning restore CS8604 // Possible null reference argument.
+
+                    await Task.Delay(100);
+
+                    if (Player.CurrentTrack != null)
+                    {
+                        isPlaying = true;
+                    }
+                }
+                await Task.Delay(1000);
+            }
         }
         private async Task StopAfterSong(object sender, Lavalink4NET.Events.Players.TrackEndedEventArgs eventArgs)
         {
