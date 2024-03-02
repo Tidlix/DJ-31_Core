@@ -34,9 +34,9 @@ namespace DJ_31.Playlists
                 Console.ForegroundColor = ConsoleColor.White;
                 return;
             } //Return error
-            else if (playlist == 1) JSONFile = $"{AppDomain.CurrentDomain.BaseDirectory}PL01.json";
-            else if (playlist == 2) JSONFile = $"{AppDomain.CurrentDomain.BaseDirectory}PL02.json";
-            else if (playlist == 3) JSONFile = $"{AppDomain.CurrentDomain.BaseDirectory}PL03.json";
+            else if (playlist == 1) JSONFile = $"{AppDomain.CurrentDomain.BaseDirectory}/Playlists/PL01.json";
+            else if (playlist == 2) JSONFile = $"{AppDomain.CurrentDomain.BaseDirectory}/Playlists/PL02.json";
+            else if (playlist == 3) JSONFile = $"{AppDomain.CurrentDomain.BaseDirectory}/Playlists/PL03.json";
 
             if (Debug)
             {
@@ -75,7 +75,7 @@ namespace DJ_31.Playlists
 
         public async Task SetPlaylist(int playlist)
         {
-            using (StreamWriter sr = new StreamWriter("currentPlaylist.json"))
+            using (StreamWriter sr = new StreamWriter($"{AppDomain.CurrentDomain.BaseDirectory}/Playlists/currentPlaylist.json"))
             {
                 await sr.WriteAsync("{" +
                     "\n\"playlist\": " + playlist +
@@ -84,7 +84,7 @@ namespace DJ_31.Playlists
         }
         public async Task GetPlaylist()
         {
-            using (StreamReader sr = new StreamReader("currentPlaylist.json"))
+            using (StreamReader sr = new StreamReader($"{AppDomain.CurrentDomain.BaseDirectory}/Playlists/currentPlaylist.json"))
             {
                 string json = await sr.ReadToEndAsync();
 #pragma warning disable CS8600 // Converting null literal or possible null value to non-nullable type.

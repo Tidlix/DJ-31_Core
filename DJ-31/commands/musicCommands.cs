@@ -38,14 +38,12 @@ namespace DJ_31
                 await ctx.DeleteResponseAsync();
                 return;
             }
-
             // Set playlist
             var Reader = new playlistReader();
             await Reader.SetPlaylist((int)playlist);
 
             // Get track
             await Reader.ReadPlaylist((int)playlist, false);
-
             var Track = await AudioService.Tracks
                 .LoadTracksAsync(Reader.song, TrackSearchMode.YouTube);
 
@@ -270,8 +268,9 @@ namespace DJ_31
 
 
             // No track error
-#pragma warning disable CS8073
-            if (Track == null)
+#pragma warning disable CS8887 // Use of unassigned local variable
+            if (Track == TrackLoadResult.CreateEmpty())
+#pragma warning disable CS8887 // Use of unassigned local variable
             {
                 var error = new DiscordEmbedBuilder()
                 {
@@ -287,7 +286,6 @@ namespace DJ_31
                 await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(error));
                 return;
             }
-#pragma warning restore CS8073
 
             // Play track
 #pragma warning disable CS8604 // Possible null reference argument.

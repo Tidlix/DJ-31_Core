@@ -19,7 +19,7 @@ namespace DJ_31.Config
 
         public async Task ReadJSON()
         {
-            using (StreamReader sr = new StreamReader("config.json"))
+            using (StreamReader sr = new StreamReader($"{AppDomain.CurrentDomain.BaseDirectory}config.json"))
             {
                 string json = await sr.ReadToEndAsync();
 #pragma warning disable CS8600 // Converting null literal or possible null value to non-nullable type.

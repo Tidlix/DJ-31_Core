@@ -57,8 +57,7 @@ namespace DJ_31
                 .ConfigureLavalink(x =>
                 {
                     x.Label = "Lavalink";
-                    x.BaseAddress = new Uri("http://localhost:433"); 
-                    x.Passphrase = "TDLX01"; 
+                    x.Passphrase = "TDLX01";
                     x.ResumptionOptions = new LavalinkSessionResumptionOptions(TimeSpan.FromSeconds(60));
                     x.ReadyTimeout = TimeSpan.FromSeconds(15);
                 })
