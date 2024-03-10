@@ -44,8 +44,24 @@ namespace DJ_31
 
             // Get track
             await Reader.ReadPlaylist((int)playlist, false);
-            var Track = await AudioService.Tracks
-                .LoadTracksAsync(Reader.song, TrackSearchMode.YouTube);
+            TrackLoadResult Track;
+            switch (Reader.playlist)
+            {
+                case 1: 
+                    Track = await AudioService.Tracks
+                        .LoadTracksAsync(Reader.song, TrackSearchMode.YouTube);
+                    break;
+                case 2:
+                    Track = await AudioService.Tracks
+                        .LoadTracksAsync(Reader.song, TrackSearchMode.YouTube);
+                    break;
+                case 3:
+                    Track = await AudioService.Tracks
+                        .LoadTracksAsync(Reader.song, TrackSearchMode.Spotify);
+                    break;
+            }
+
+            
 
             // No track error
 #pragma warning disable CS8073
@@ -307,7 +323,6 @@ namespace DJ_31
             await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(response));
         }
 
-
         // Others
         private async ValueTask<QueuedLavalinkPlayer?> GetPlayerAsync(InteractionContext ctx, bool connectToVoiceChannel = true)
         {
@@ -356,9 +371,22 @@ namespace DJ_31
                 {
                     // Get track
                     await Reader.ReadPlaylist(Reader.playlist, false);
-
-                    var Track = await AudioService.Tracks
-                        .LoadTracksAsync(Reader.song, TrackSearchMode.YouTube);
+                    TrackLoadResult Track;
+                    switch (Reader.playlist)
+                    {
+                        case 1:
+                            Track = await AudioService.Tracks
+                                .LoadTracksAsync(Reader.song, TrackSearchMode.YouTube);
+                            break;
+                        case 2:
+                            Track = await AudioService.Tracks
+                                .LoadTracksAsync(Reader.song, TrackSearchMode.YouTube);
+                            break;
+                        case 3:
+                            Track = await AudioService.Tracks
+                                .LoadTracksAsync(Reader.song, TrackSearchMode.Spotify);
+                            break;
+                    }
 
                     // Play track
 #pragma warning disable CS8604 // Possible null reference argument.
