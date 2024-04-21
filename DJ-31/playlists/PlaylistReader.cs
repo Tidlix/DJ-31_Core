@@ -88,7 +88,7 @@ namespace DJ_31.Playlists
             {
                 string json = await sr.ReadToEndAsync();
 #pragma warning disable CS8600 // Converting null literal or possible null value to non-nullable type.
-                JSONStructure data = JsonConvert.DeserializeObject<JSONStructure>(json);
+                CurrentPlaylistStructure data = JsonConvert.DeserializeObject<CurrentPlaylistStructure>(json);
 #pragma warning restore CS8600 // Converting null literal or possible null value to non-nullable type.
 #pragma warning disable CS8602 // Dereference of a possibly null reference.
                 this.playlist = data.playlist;
@@ -96,7 +96,7 @@ namespace DJ_31.Playlists
             }
         }
 
-        internal sealed class JSONStructure
+        internal sealed class CurrentPlaylistStructure
         {
             public int playlist { get; set; }
         }

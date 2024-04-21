@@ -45,37 +45,47 @@ namespace DJ_31
             // Get track
             await Reader.ReadPlaylist((int)playlist, false);
             TrackLoadResult Track;
-            switch (Reader.playlist)
+            Console.WriteLine(Reader.playlist);
+            switch (playlist)
             {
-                case 1: 
+                case 1:
+                    Console.WriteLine("1");
                     Track = await AudioService.Tracks
                         .LoadTracksAsync(Reader.song, TrackSearchMode.YouTube);
                     break;
+
                 case 2:
                     Track = await AudioService.Tracks
                         .LoadTracksAsync(Reader.song, TrackSearchMode.YouTube);
                     break;
+
                 case 3:
                     Track = await AudioService.Tracks
                         .LoadTracksAsync(Reader.song, TrackSearchMode.Spotify);
                     break;
+
+                default:
+                    Track = await AudioService.Tracks
+                        .LoadTracksAsync(Reader.song, TrackSearchMode.YouTube);
+                    break;
             }
 
-            
 
             // No track error
 #pragma warning disable CS8073
-            if (Track == null)
+#pragma warning disable CS8887 // Use of unassigned local variable
+            if (Track.IsFailed)
             {
                 var error = new DiscordEmbedBuilder()
                 {
                     Title = "Error!",
-                    Description = $"Der Song \n{Reader.song}\n wurde nicht gefunden! Bitte Kontaktiere Tidlix",
+                    Description = $"Der Song \n**{Reader.song}**\n wurde nicht gefunden! Bitte Kontaktiere Tidlix",
                     Color = DiscordColor.Red
                 };
                 await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(error));
-                return;
+                //return;
             }
+#pragma warning restore CS8887 // Use of unassigned local variable
 #pragma warning restore CS8073
 
 
@@ -258,6 +268,7 @@ namespace DJ_31
             // Check if Spotify Link
             if (song.Contains("https://open.spotify.com/") || song.Contains("/track/"))
             {
+                Console.WriteLine("SpotifySearch");
                 isLink = true;
                 searchType = "Spotify Link";
                 Track = await AudioService.Tracks
@@ -266,6 +277,7 @@ namespace DJ_31
             //Check if Youtube Link
             else if (song.Contains("https://www.youtube.com/watch?v="))
             {
+                Console.WriteLine("YoutubeSearch");
                 isLink = true;
                 searchType = "Youtube Link";
                 Track = await AudioService.Tracks
@@ -277,16 +289,13 @@ namespace DJ_31
             }
             else
             {
+                Console.WriteLine("NameSearch");
                 Track = await AudioService.Tracks
                 .LoadTracksAsync(song, TrackSearchMode.YouTube);
             }
 
-
-
-            // No track error
 #pragma warning disable CS8887 // Use of unassigned local variable
-            if (Track == TrackLoadResult.CreateEmpty())
-#pragma warning disable CS8887 // Use of unassigned local variable
+            if (Track.IsFailed)
             {
                 var error = new DiscordEmbedBuilder()
                 {
@@ -302,6 +311,7 @@ namespace DJ_31
                 await ctx.EditResponseAsync(new DiscordWebhookBuilder().AddEmbed(error));
                 return;
             }
+#pragma warning restore CS8887 // Use of unassigned local variable
 
             // Play track
 #pragma warning disable CS8604 // Possible null reference argument.
@@ -377,6 +387,7 @@ namespace DJ_31
                         case 1:
                             Track = await AudioService.Tracks
                                 .LoadTracksAsync(Reader.song, TrackSearchMode.YouTube);
+                            Console.WriteLine(Track.Track.Title);
                             break;
                         case 2:
                             Track = await AudioService.Tracks
@@ -390,7 +401,9 @@ namespace DJ_31
 
                     // Play track
 #pragma warning disable CS8604 // Possible null reference argument.
+#pragma warning disable CS8887 // Use of unassigned local variable
                     await Player.PlayAsync(Track.Track);
+#pragma warning restore CS8887 // Use of unassigned local variable
 #pragma warning restore CS8604 // Possible null reference argument.
 
                     await Task.Delay(100);
